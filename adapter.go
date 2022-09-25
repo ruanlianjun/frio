@@ -1,7 +1,6 @@
 package frio
 
 import (
-	"errors"
 	"io"
 	"os"
 	"time"
@@ -57,64 +56,46 @@ func (a *Adapter) Reader(key string) *Reader {
 	}
 }
 
-func (a *Adapter) ReadAt(key string, p []byte, off int64) (int, error) {
-	if bytes, ok := a.cache.Get(key); ok {
-		p = bytes
-		return len(bytes), nil
+func (a *Adapter) ReadAt(key string, off int64) ([]byte, int, error) {
+	if bytes, ok := a.cache.Get(key); ok && bytes != nil {
+		return bytes, len(bytes), nil
 	}
 
-	r, _, err := a.keyStreamer.StreamAt(key, off, int64(len(p)))
+	r, _, err := a.keyStreamer.StreamAt(key, off, 0)
 	if err != nil {
-		return 0, err
+		return nil, 0, err
 	}
-	n, err := io.ReadFull(r, p)
-	if errors.Is(err, io.ErrUnexpectedEOF) {
-		err = io.EOF
-	}
+
+	p, err := io.ReadAll(r)
 	if p != nil && err == nil {
 		a.cache.Add(key, p)
 	}
-	return n, nil
+
+	return p, len(p), nil
 }
 
 type Reader struct {
-	a    *Adapter
-	key  string
-	size int64
-	off  int64
+	a   *Adapter
+	key string
+	off int64
 }
 
-func (r *Reader) Read(buf []byte) (int, error) {
-	if bt, ok := r.a.cache.Get(r.key); ok && bt != nil {
-		buf = bt
-		return len(bt), nil
+func (r *Reader) Read() ([]byte, int, error) {
+	bt, n, err := r.a.ReadAt(r.key, r.off)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	if r.off >= r.size {
-		return 0, io.EOF
-	}
-	n, err := r.a.ReadAt(r.key, buf, r.off)
-	r.off += int64(n)
-
-	if buf != nil {
-		r.a.cache.Add(r.key, buf)
-	}
-
-	return n, err
+	return bt, n, err
 }
 
-func (r *Reader) ReadAt(buf []byte, off int64) (int, error) {
-	if bt, ok := r.a.cache.Get(r.key); ok && bt != nil {
-		buf = bt
-		return len(bt), nil
+func (r *Reader) ReadAt(off int64) ([]byte, int, error) {
+	bt, n, err := r.a.ReadAt(r.key, off)
+	if err != nil {
+		return nil, 0, err
 	}
-	if off >= r.size {
-		return 0, io.EOF
-	}
-	if buf != nil {
-		r.a.cache.Add(r.key, buf)
-	}
-	return r.a.ReadAt(r.key, buf, off)
+
+	return bt, n, nil
 }
 
 func (r *Reader) Seek(off int64, nWhence int) (int64, error) {
@@ -125,7 +106,7 @@ func (r *Reader) Seek(off int64, nWhence int) (int64, error) {
 	case io.SeekStart:
 		coff = off
 	case io.SeekEnd:
-		coff = r.size + off
+		coff = off
 	default:
 		return 0, os.ErrInvalid
 	}

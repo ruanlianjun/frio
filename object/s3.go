@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/url"
 	"syscall"
 
@@ -69,7 +68,6 @@ func (h *Handler) StreamAt(key string, off int64, n int64) (io.ReadCloser, int64
 	if err != nil {
 		return nil, 0, err
 	}
-	log.Printf("bucket:%s object:%s\n", bucket, object)
 	var size int64
 	if off == 0 {
 		r, err := h.client.HeadObject(h.ctx, &s3.HeadObjectInput{
