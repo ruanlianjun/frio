@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	ak       = "3C0JZGAMQNDW4V79AFNM"
-	sk       = "dC3JVwrefYyeBvRDnIS8XketdopCQW80E8wpJs9K"
-	region   = "cn-north-4"
-	endpoint = "https://obs.cn-north-4.myhuaweicloud.com"
+	ak       = ""
+	sk       = ""
+	region   = ""
+	endpoint = ""
 )
 
 func client() *Adapter {
