@@ -81,7 +81,7 @@ type Reader struct {
 }
 
 func (r *Reader) Read() ([]byte, int, error) {
-	bt, n, err := r.a.ReadAt(r.key, r.off)
+	bt, n, err := r.a.ReadAt(r.key, r.off, 0)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -89,8 +89,8 @@ func (r *Reader) Read() ([]byte, int, error) {
 	return bt, n, err
 }
 
-func (r *Reader) ReadAt(off int64) ([]byte, int, error) {
-	bt, n, err := r.a.ReadAt(r.key, off)
+func (r *Reader) ReadAt(off int64, size int64) ([]byte, int, error) {
+	bt, n, err := r.a.ReadAt(r.key, off, size)
 	if err != nil {
 		return nil, 0, err
 	}
