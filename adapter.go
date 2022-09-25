@@ -56,12 +56,12 @@ func (a *Adapter) Reader(key string) *Reader {
 	}
 }
 
-func (a *Adapter) ReadAt(key string, off int64) ([]byte, int, error) {
+func (a *Adapter) ReadAt(key string, off int64, n int64) ([]byte, int, error) {
 	if bytes, ok := a.cache.Get(key); ok && bytes != nil {
 		return bytes, len(bytes), nil
 	}
 
-	r, _, err := a.keyStreamer.StreamAt(key, off, 0)
+	r, _, err := a.keyStreamer.StreamAt(key, off, n)
 	if err != nil {
 		return nil, 0, err
 	}
