@@ -56,7 +56,14 @@ func (a *Adapter) Reader(key string) *Reader {
 	}
 }
 
-func (a *Adapter) ReadAt(key string, off int64, n int64) ([]byte, int, error) {
+func (a *Adapter) ReadAt(key string) *Reader {
+	return &Reader{
+		a:   a,
+		key: key,
+	}
+}
+
+func (a *Adapter) srcRead(key string, off, n int64) ([]byte, int, error) {
 	if bytes, ok := a.cache.Get(key); ok && bytes != nil {
 		return bytes, len(bytes), nil
 	}
@@ -75,13 +82,13 @@ func (a *Adapter) ReadAt(key string, off int64, n int64) ([]byte, int, error) {
 }
 
 type Reader struct {
-	a   *Adapter
-	key string
-	off int64
+	a         *Adapter
+	key       string
+	off, size int64
 }
 
 func (r *Reader) Read() ([]byte, int, error) {
-	bt, n, err := r.a.ReadAt(r.key, r.off, 0)
+	bt, n, err := r.a.srcRead(r.key, r.off, 0)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -90,7 +97,9 @@ func (r *Reader) Read() ([]byte, int, error) {
 }
 
 func (r *Reader) ReadAt(off int64, size int64) ([]byte, int, error) {
-	bt, n, err := r.a.ReadAt(r.key, off, size)
+	r.off += off
+	r.size = size
+	bt, n, err := r.a.srcRead(r.key, r.off, size)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -106,7 +115,7 @@ func (r *Reader) Seek(off int64, nWhence int) (int64, error) {
 	case io.SeekStart:
 		coff = off
 	case io.SeekEnd:
-		coff = off
+		coff = r.size + off
 	default:
 		return 0, os.ErrInvalid
 	}
