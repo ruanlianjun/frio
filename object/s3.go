@@ -22,25 +22,20 @@ type Handler struct {
 	requestPayer string
 }
 
-// Option is an option that can be passed to RegisterHandler
 type Option func(o *Handler)
 
-// Client sets the s3.Client that will be used by the handler
 func Client(cl *s3.Client) Option {
 	return func(o *Handler) {
 		o.client = cl
 	}
 }
 
-// RequestPayer bills the requester for the request
 func RequestPayer() Option {
 	return func(o *Handler) {
 		o.requestPayer = "requester"
 	}
 }
 
-// Handle creates a KeyReaderAt suitable for constructing an Adapter
-// that accesses objects on Amazon S3
 func Handle(ctx context.Context, opts ...Option) (*Handler, error) {
 	handler := &Handler{
 		ctx: ctx,
