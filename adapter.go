@@ -3,6 +3,7 @@ package frio
 import (
 	"errors"
 	"io"
+	"os"
 	"time"
 )
 
@@ -114,4 +115,23 @@ func (r *Reader) ReadAt(buf []byte, off int64) (int, error) {
 		r.a.cache.Add(r.key, buf)
 	}
 	return r.a.ReadAt(r.key, buf, off)
+}
+
+func (r *Reader) Seek(off int64, nWhence int) (int64, error) {
+	coff := r.off
+	switch nWhence {
+	case io.SeekCurrent:
+		coff += off
+	case io.SeekStart:
+		coff = off
+	case io.SeekEnd:
+		coff = r.size + off
+	default:
+		return 0, os.ErrInvalid
+	}
+	if coff < 0 {
+		return r.off, os.ErrInvalid
+	}
+	r.off = coff
+	return r.off, nil
 }
