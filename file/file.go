@@ -11,6 +11,10 @@ type Handler struct {
 	ctx context.Context
 }
 
+func Handle(ctx context.Context) *Handler {
+	return &Handler{ctx: ctx}
+}
+
 func (h *Handler) StreamAt(key string, off int64, n int64) (io.ReadCloser, int64, error) {
 	stat, err := os.Stat(key)
 	if err != nil {
