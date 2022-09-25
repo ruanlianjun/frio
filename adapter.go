@@ -16,20 +16,20 @@ type KeyStreamerAt interface {
 	StreamAt(key string, off int64, n int64) (io.ReadCloser, int64, error)
 }
 
-type adapter struct {
+type Adapter struct {
 	cache       AdapterCache
 	keyStreamer KeyStreamerAt
 }
 
 type Options interface {
-	adapterOpt(adapter *adapter) error
+	adapterOpt(adapter *Adapter) error
 }
 
 type cache struct {
 	numEntries int
 }
 
-func (c *cache) adapterOpt(adapter *adapter) error {
+func (c *cache) adapterOpt(adapter *Adapter) error {
 	adapter.cache = NewLRUCache(c.numEntries)
 	return nil
 }
@@ -38,8 +38,8 @@ func WithDataCache(numEntries int) Options {
 	return &cache{numEntries: numEntries}
 }
 
-func NewAdapter(keyStreamer KeyStreamerAt, options ...Options) *adapter {
-	ada := &adapter{
+func NewAdapter(keyStreamer KeyStreamerAt, options ...Options) *Adapter {
+	ada := &Adapter{
 		keyStreamer: keyStreamer,
 	}
 	for _, option := range options {
@@ -48,7 +48,7 @@ func NewAdapter(keyStreamer KeyStreamerAt, options ...Options) *adapter {
 	return ada
 }
 
-func (a *adapter) Reader(key string) *Reader {
+func (a *Adapter) Reader(key string) *Reader {
 	return &Reader{
 		a:   a,
 		key: key,
@@ -56,7 +56,7 @@ func (a *adapter) Reader(key string) *Reader {
 	}
 }
 
-func (a *adapter) ReadAt(key string, p []byte, off int64) (int, error) {
+func (a *Adapter) ReadAt(key string, p []byte, off int64) (int, error) {
 	if bytes, ok := a.cache.Get(key); ok {
 		p = bytes
 		return len(bytes), nil
@@ -77,7 +77,7 @@ func (a *adapter) ReadAt(key string, p []byte, off int64) (int, error) {
 }
 
 type Reader struct {
-	a    *adapter
+	a    *Adapter
 	key  string
 	size int64
 	off  int64
